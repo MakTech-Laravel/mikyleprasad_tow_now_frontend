@@ -1,3 +1,4 @@
+/** FIREBASE-DISABLED — routes removed; restore via docs/FIREBASE_DISABLE_AND_RESTORE.md */
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { PageMeta } from '@/components/seo/PageMeta';

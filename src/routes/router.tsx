@@ -11,7 +11,7 @@
 import { createBrowserRouter, Navigate, Outlet } from 'react-router-dom';
 
 import { DriverApprovalRedirectListener } from '@/components/auth/DriverApprovalRedirectListener';
-import { FcmRideEventBridge } from '@/components/fcm/FcmRideEventBridge';
+// import { FcmRideEventBridge } from '@/components/fcm/FcmRideEventBridge'; // FIREBASE-DISABLED
 import { FrontendLayout } from '@/layouts/frontend/FrontendLayout';
 import { AuthLayout } from '@/layouts/auth/AuthLayout';
 import { AdminLayout } from '@/layouts/admin/AdminLayout';
@@ -38,8 +38,8 @@ import {
   AdminSettingsPage,
   AdminUsers,
   ContactPage,
-  FcmTokenDebugPage,
-  FcmSendDemoPage,
+  // FcmTokenDebugPage, // FIREBASE-DISABLED
+  // FcmSendDemoPage, // FIREBASE-DISABLED
   DriverOnboardingWaitingPage,
   DriverActiveRidesPage,
   DriverAppProfilePage,
@@ -93,7 +93,7 @@ export const router = createBrowserRouter([
   {
     element: (
       <>
-        <FcmRideEventBridge />
+        {/* <FcmRideEventBridge /> FIREBASE-DISABLED */}
         <DriverApprovalRedirectListener />
         <Outlet />
       </>
@@ -152,8 +152,7 @@ export const router = createBrowserRouter([
           { path: '/privacy', element: <PrivacyPage /> },
           { path: '/contact-us', element: <ContactPage /> },
           { path: '/demo/chat-room', element: <ChatRoom conversationId="1" /> },
-          { path: '/demo/fcm-token', element: <FcmTokenDebugPage /> },
-          { path: '/demo/fcm-send', element: <FcmSendDemoPage /> },
+          // FIREBASE-DISABLED: /demo/fcm-token, /demo/fcm-send — see docs/FIREBASE_DISABLE_AND_RESTORE.md
         ],
       },
       {

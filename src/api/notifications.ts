@@ -100,7 +100,7 @@ export async function markAllNotificationsRead(): Promise<void> {
   await request.post('/notifications/read-all');
 }
 
-/** Dev-only: POST `/notifications/test-push-token` (requires auth + local or NOTIFICATIONS_ALLOW_TEST_BROADCAST_ROUTE). */
+/* ===== FIREBASE-DISABLED START (docs/FIREBASE_DISABLE_AND_RESTORE.md) =====
 export async function sendTestPushToToken(payload: {
   fcm_token: string;
   title?: string;
@@ -120,4 +120,12 @@ export async function sendTestPushToToken(payload: {
     throw new Error('Unexpected response from server.');
   }
   return { fcm_message_id: data.fcm_message_id };
+}
+===== FIREBASE-DISABLED END ===== */
+export async function sendTestPushToToken(_payload: {
+  fcm_token: string;
+  title?: string;
+  body?: string;
+}): Promise<{ fcm_message_id: string }> {
+  throw new Error('Firebase test push is disabled. See docs/FIREBASE_DISABLE_AND_RESTORE.md');
 }

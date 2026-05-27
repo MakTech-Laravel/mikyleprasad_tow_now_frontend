@@ -5,12 +5,13 @@ import react, { reactCompilerPreset } from '@vitejs/plugin-react';
 import babel from '@rolldown/plugin-babel';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { loadEnv } from 'vite';
+// import { loadEnv } from 'vite'; // FIREBASE-DISABLED (was used for Firebase env warning)
 import tailwindcss from '@tailwindcss/vite';
 import { VitePWA } from 'vite-plugin-pwa';
 
 const projectRoot = path.dirname(fileURLToPath(import.meta.url));
 
+/* ===== FIREBASE-DISABLED START (docs/FIREBASE_DISABLE_AND_RESTORE.md) =====
 (() => {
   const mode = process.env.NODE_ENV === 'production' ? 'production' : 'development';
   const fromFile = loadEnv(mode, projectRoot, 'VITE_').VITE_FIREBASE_API_KEY ?? '';
@@ -23,6 +24,7 @@ const projectRoot = path.dirname(fileURLToPath(import.meta.url));
     );
   }
 })();
+===== FIREBASE-DISABLED END ===== */
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -47,8 +49,7 @@ export default defineConfig({
         enabled: false,
       },
       workbox: {
-        // Load Firebase Messaging handlers into the same SW as Workbox (FCM + PWA precache).
-        importScripts: ['firebase-messaging-sw.js'],
+        // FIREBASE-DISABLED: importScripts: ['firebase-messaging-sw.js'],
         globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,woff2}'],
         runtimeCaching: [
           {

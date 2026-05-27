@@ -1,3 +1,4 @@
+/* ===== FIREBASE-DISABLED START (docs/FIREBASE_DISABLE_AND_RESTORE.md) =====
 import { initializeApp, getApps, type FirebaseOptions } from 'firebase/app';
 import {
   getMessaging,
@@ -38,9 +39,6 @@ export function isFcmMessagingSupported(): Promise<boolean> {
   return isSupported();
 }
 
-/**
- * Read-only snapshot for debug UI (does not request permission).
- */
 export function fcmEnvStatus(): FcmEnvStatus {
   const hasApiKey = Boolean((import.meta.env.VITE_FIREBASE_API_KEY as string | undefined)?.trim());
   const hasVapidKey = Boolean((import.meta.env.VITE_FIREBASE_VAPID_KEY as string | undefined)?.trim());
@@ -59,9 +57,6 @@ export function fcmEnvStatus(): FcmEnvStatus {
   };
 }
 
-/**
- * Vite PWA does not register a SW in dev; production uses Workbox `sw.js` with Firebase loaded via `importScripts`.
- */
 async function messagingServiceWorkerRegistration(): Promise<ServiceWorkerRegistration> {
   if (!('serviceWorker' in navigator)) {
     throw new Error('Service workers are not supported');
@@ -72,11 +67,6 @@ async function messagingServiceWorkerRegistration(): Promise<ServiceWorkerRegist
   return navigator.serviceWorker.ready;
 }
 
-/**
- * Request notification permission (if needed), register the messaging service worker, and return an FCM registration token.
- *
- * @throws Error with a short message if prerequisites fail or the token is empty.
- */
 export async function requestFcmDeviceToken(): Promise<string> {
   const vapidKey = (import.meta.env.VITE_FIREBASE_VAPID_KEY as string | undefined)?.trim();
   const apiKey = (import.meta.env.VITE_FIREBASE_API_KEY as string | undefined)?.trim();
@@ -134,7 +124,6 @@ export async function initFCM(): Promise<void> {
     const messaging = getMessaging(app);
 
     onMessage(messaging, (payload: MessagePayload) => {
-      // Let app-level listeners refresh critical data after push delivery.
       window.dispatchEvent(new CustomEvent('towtrack:refresh-data'));
 
       const data = payload.data;
@@ -152,4 +141,36 @@ export async function initFCM(): Promise<void> {
       console.warn('[fcm] init failed', e);
     }
   }
+}
+===== FIREBASE-DISABLED END ===== */
+
+/** Stubs while Firebase is disabled — see docs/FIREBASE_DISABLE_AND_RESTORE.md */
+export type FcmEnvStatus = {
+  hasApiKey: boolean;
+  hasVapidKey: boolean;
+  hasProjectId: boolean;
+  hasAppId: boolean;
+  permission: NotificationPermission | 'unsupported';
+};
+
+export function isFcmMessagingSupported(): Promise<boolean> {
+  return Promise.resolve(false);
+}
+
+export function fcmEnvStatus(): FcmEnvStatus {
+  return {
+    hasApiKey: false,
+    hasVapidKey: false,
+    hasProjectId: false,
+    hasAppId: false,
+    permission: 'unsupported',
+  };
+}
+
+export async function requestFcmDeviceToken(): Promise<string> {
+  throw new Error('Firebase Cloud Messaging is disabled. See docs/FIREBASE_DISABLE_AND_RESTORE.md');
+}
+
+export async function initFCM(): Promise<void> {
+  /* Firebase disabled */
 }

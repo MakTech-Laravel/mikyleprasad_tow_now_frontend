@@ -150,8 +150,13 @@ export async function offlineSyncRides(rides: OfflineRideSyncRow[]): Promise<{
   return res.data.data;
 }
 
+/* ===== FIREBASE-DISABLED START (docs/FIREBASE_DISABLE_AND_RESTORE.md) =====
 export async function updateFcmToken(fcm_token: string): Promise<void> {
   await request.put('/fcm-token', { fcm_token });
+}
+===== FIREBASE-DISABLED END ===== */
+export async function updateFcmToken(_fcm_token: string): Promise<void> {
+  /* Firebase disabled */
 }
 
 export async function updateDriverLocation(payload: {

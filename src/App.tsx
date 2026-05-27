@@ -28,6 +28,7 @@ export default function App() {
     }
   }, [theme, toggleTheme]);
 
+  /* ===== FIREBASE-DISABLED START (docs/FIREBASE_DISABLE_AND_RESTORE.md) =====
   useEffect(() => {
     const onRefresh = () => {
       if (!navigator.onLine) return;
@@ -38,6 +39,7 @@ export default function App() {
     window.addEventListener('towtrack:refresh-data', onRefresh as EventListener);
     return () => window.removeEventListener('towtrack:refresh-data', onRefresh as EventListener);
   }, []);
+  ===== FIREBASE-DISABLED END ===== */
 
   return (
     <HelmetProvider>

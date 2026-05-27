@@ -47,8 +47,10 @@ export const MessagesPage = lazy(() => import('@/pages/user/MessagesPage'));
 export const TermsPage = lazy(() => import('@/pages/frontend/TermsPage'));
 export const PrivacyPage = lazy(() => import('@/pages/frontend/PrivacyPage'));
 export const ContactPage = lazy(() => import('@/pages/frontend/ContactPage'));
+/* ===== FIREBASE-DISABLED START (docs/FIREBASE_DISABLE_AND_RESTORE.md) =====
 export const FcmTokenDebugPage = lazy(() => import('@/pages/demo/FcmTokenDebugPage'));
 export const FcmSendDemoPage = lazy(() => import('@/pages/demo/FcmSendDemoPage'));
+===== FIREBASE-DISABLED END ===== */
 
 export const RegisterPage = lazy(() => import('@/pages/auth/RegisterPage'));
 export const RegisterOperatorPage = lazy(() => import('@/pages/auth/SelectOperatorPage'));

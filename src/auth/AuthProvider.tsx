@@ -2,7 +2,7 @@ import * as React from 'react';
 
 import { api } from '@/api/client';
 import { AuthContext, type AuthContextValue } from '@/auth/context';
-import { isDriverAwaitingApproval } from '@/auth/completePassportLogin';
+// import { isDriverAwaitingApproval } from '@/auth/completePassportLogin'; // FIREBASE-DISABLED (used by initFCM effect)
 import {
   beginAuthBootstrap,
   endAuthBootstrap,
@@ -209,6 +209,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     user,
   });
 
+  /* ===== FIREBASE-DISABLED START (docs/FIREBASE_DISABLE_AND_RESTORE.md) =====
   React.useEffect(() => {
     if (sessionStatus !== 'authenticated' || !user) return;
     if (isDriverAwaitingApproval(user)) return;
@@ -221,6 +222,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       cancelled = true;
     };
   }, [sessionStatus, user]);
+  ===== FIREBASE-DISABLED END ===== */
 
   const setToken = React.useCallback((token: string) => {
     clearGuestToken();
