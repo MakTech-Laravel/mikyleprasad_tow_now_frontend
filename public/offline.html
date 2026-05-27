@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TowTrack — Offline</title>
+    <style>
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: system-ui, sans-serif;
+        background: #0f172a;
+        color: #f8fafc;
+      }
+      .box {
+        max-width: 22rem;
+        padding: 2rem;
+        text-align: center;
+      }
+      h1 {
+        color: #f97316;
+        font-size: 1.5rem;
+        margin-bottom: 0.75rem;
+      }
+      p {
+        line-height: 1.5;
+        margin: 0.5rem 0;
+      }
+      button {
+        margin-top: 1.25rem;
+        padding: 0.6rem 1.25rem;
+        border: none;
+        border-radius: 0.5rem;
+        background: #f97316;
+        color: #fff;
+        font-weight: 600;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="box">
+      <h1>TowTrack</h1>
+      <p>You’re offline.</p>
+      <p>Your bookings will sync when you reconnect.</p>
+      <button type="button" onclick="window.location.reload()">Retry</button>
+    </div>
+  </body>
+</html>
