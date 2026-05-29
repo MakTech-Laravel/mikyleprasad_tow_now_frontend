@@ -31,7 +31,7 @@ export default function Loading({
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.6, ease: 'easeOut' }}
-            className="text-[4rem] leading-none font-black tracking-tighter text-foreground/5 select-none sm:text-[7rem] md:text-[16rem]"
+            className="text-[1rem] leading-none font-black tracking-tighter text-foreground/5 select-none sm:text-[4rem] md:text-[8rem]"
           >
             {backgroundText}
           </motion.h1>
