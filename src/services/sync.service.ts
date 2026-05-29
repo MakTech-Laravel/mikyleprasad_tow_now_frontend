@@ -93,9 +93,12 @@ export async function syncLocations(): Promise<void> {
 }
 
 export function registerBackgroundSync(): void {
+  // PWA-DISABLED: sync via IndexedDB queue when online (no service worker Background Sync).
+  void syncBookings();
+
+  /* ===== PWA-DISABLED START (docs/FIREBASE_DISABLE_AND_RESTORE.md) =====
   if (typeof window === 'undefined' || !('serviceWorker' in navigator)) {
     void syncBookings();
-
     return;
   }
 
@@ -107,8 +110,6 @@ export function registerBackgroundSync(): void {
         void sync.register('sync-bookings').catch(() => {
           void syncBookings();
         });
-        // NOTE: Workbox SW in this app does not implement a 'sync' handler
-        // for 'sync-bookings', so we still run foreground sync to guarantee delivery.
         void syncBookings();
       } else {
         void syncBookings();
@@ -117,6 +118,7 @@ export function registerBackgroundSync(): void {
     .catch(() => {
       void syncBookings();
     });
+  ===== PWA-DISABLED END ===== */
 }
 
 export function setupNetworkSyncListener(): void {
