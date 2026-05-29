@@ -1,3 +1,4 @@
+/* ===== PWA-DISABLED START (docs/FIREBASE_DISABLE_AND_RESTORE.md) =====
 import { useEffect, useMemo, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -81,7 +82,6 @@ export default function PwaInstallPrompt() {
     await deferredPrompt.prompt();
     const choice = await deferredPrompt.userChoice;
     if (choice.outcome !== 'accepted') {
-      // Keep prompt hidden for this session if user dismissed.
       setDeferredPrompt(null);
     }
   };
@@ -106,4 +106,10 @@ export default function PwaInstallPrompt() {
       </div>
     </div>
   );
+}
+===== PWA-DISABLED END ===== */
+
+/** No-op while PWA install prompt is disabled — see docs/FIREBASE_DISABLE_AND_RESTORE.md */
+export default function PwaInstallPrompt() {
+  return null;
 }

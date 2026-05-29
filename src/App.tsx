@@ -11,7 +11,7 @@ import { Toaster } from 'sonner';
 import { AlertTriangle, XCircle, CheckCircle, Info } from 'lucide-react';
 import { EchoGate } from './components/EchoGate';
 import ConnectionBanner from './components/network/ConnectionBanner';
-import PwaInstallPrompt from './components/network/PwaInstallPrompt';
+// import PwaInstallPrompt from './components/network/PwaInstallPrompt'; // PWA-DISABLED
 // import { useSiteSettings } from './hooks/useSiteSettings';
 import { NotificationInboxProvider } from './contexts/NotificationInboxContext';
 
@@ -49,7 +49,7 @@ export default function App() {
             <NotificationInboxProvider>
             <ErrorBoundary>
               <ConnectionBanner />
-              <PwaInstallPrompt />
+              {/* <PwaInstallPrompt /> PWA-DISABLED */}
               <AppBootstrap />
               <Toaster
                 position="top-right"

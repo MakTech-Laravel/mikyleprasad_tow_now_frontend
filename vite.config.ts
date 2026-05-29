@@ -1,5 +1,5 @@
 /// <reference types="vitest" />
-/// <reference types="vite-plugin-pwa/client" />
+// /// <reference types="vite-plugin-pwa/client" /> // PWA-DISABLED
 import { defineConfig } from 'vitest/config';
 import react, { reactCompilerPreset } from '@vitejs/plugin-react';
 import babel from '@rolldown/plugin-babel';
@@ -7,7 +7,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 // import { loadEnv } from 'vite'; // FIREBASE-DISABLED (was used for Firebase env warning)
 import tailwindcss from '@tailwindcss/vite';
-import { VitePWA } from 'vite-plugin-pwa';
+// import { VitePWA } from 'vite-plugin-pwa'; // PWA-DISABLED
 
 const projectRoot = path.dirname(fileURLToPath(import.meta.url));
 
@@ -32,104 +32,7 @@ export default defineConfig({
     react(),
     babel({ presets: [reactCompilerPreset()] }),
     tailwindcss(),
-    VitePWA({
-      registerType: 'autoUpdate',
-      injectRegister: null,
-      manifestFilename: 'manifest.json',
-      includeAssets: [
-        'favicon.svg',
-        'icons/icon-192.png',
-        'icons/icon-512.png',
-        'icons/icon-72.png',
-        'icons/icon-48.png',
-        'icons/icon-144.png',
-      ],
-      // Dev SW + autoUpdate causes infinite reload glitches when refreshing protected routes.
-      devOptions: {
-        enabled: false,
-      },
-      workbox: {
-        // FIREBASE-DISABLED: importScripts: ['firebase-messaging-sw.js'],
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,woff2}'],
-        runtimeCaching: [
-          {
-            urlPattern: /\/api\/v\d+\/(me|login|register|refresh)(\/|$)/i,
-            handler: 'NetworkOnly',
-          },
-          {
-            urlPattern: /\/api\//,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'api-cache',
-              networkTimeoutSeconds: 5,
-              expiration: { maxAgeSeconds: 60 * 60 * 24 },
-            },
-          },
-          {
-            urlPattern: /^https:\/\/[a-z]*\.tile\.openstreetmap\.org\/.*/i,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'osm-tiles',
-              expiration: { maxEntries: 1000, maxAgeSeconds: 60 * 60 * 24 * 30 },
-            },
-          },
-          {
-            urlPattern: /^https:\/\/fonts\.(googleapis|gstatic)\.com\/.*/i,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'fonts',
-              expiration: { maxEntries: 20, maxAgeSeconds: 60 * 60 * 24 * 365 },
-            },
-          },
-        ],
-      },
-      manifest: {
-        name: 'TowTrack',
-        short_name: 'TowTrack',
-        theme_color: '#F97316',
-        background_color: '#0F172A',
-        display: 'standalone',
-        orientation: 'portrait',
-        icons: [
-          {
-            src: '/icons/icon-192.png',
-            sizes: '192x192',
-            type: 'image/png',
-            purpose: 'any maskable',
-          },
-          {
-            src: '/icons/icon-512.png',
-            sizes: '512x512',
-            type: 'image/png',
-            purpose: 'any maskable',
-          },
-          {
-            src: '/icons/icon-48.png',
-            sizes: '48x48',
-            type: 'image/png',
-            purpose: 'any maskable',
-          },
-          {
-            src: '/icons/icon-72.png',
-            sizes: '72x72',
-            type: 'image/png',
-            purpose: 'any maskable',
-          },
-          {
-            src: '/icons/icon-96.png',
-            sizes: '96x96',
-            type: 'image/png',
-            purpose: 'any maskable',
-          },
-          {
-            src: '/icons/icon-144.png',
-            sizes: '144x144',
-            type: 'image/png',
-            purpose: 'any maskable',
-          },
-        ],
-      },
-    }),
+    // PWA-DISABLED: VitePWA plugin omitted — restore from docs/FIREBASE_DISABLE_AND_RESTORE.md (section "VitePWA config").
   ],
   server: {
     proxy: {
