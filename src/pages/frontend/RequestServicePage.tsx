@@ -1,4 +1,5 @@
-import { useNavigate, useParams } from 'react-router-dom';
+import { useEffect } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, FileText, MapPin, Star } from 'lucide-react';
 import { AxiosError } from 'axios';
 
@@ -17,9 +18,13 @@ import Image from '@/components/image';
 import { toast } from 'sonner';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { fetchDriverById } from '@/api/drivers';
-import { createRideRequest } from '@/api/rides';
+import { createRideRequest, fetchActiveRide } from '@/api/rides';
 import { useAuth } from '@/auth/useAuth';
 import { hasAnyRole } from '@/auth/roles';
+import {
+  customerWorkflowPath,
+  isCustomerRideLocked,
+} from '@/features/rides/rideWorkflow';
 import { bookingQueueAdd } from '@/db/offlineDB';
 import { registerBackgroundSync, syncBookings } from '@/services/sync.service';
 
@@ -50,11 +55,27 @@ export default function RequestServicePage() {
   const { user, isAuthenticated } = useAuth();
   const canSubmit = isAuthenticated && hasAnyRole(user, 'user');
 
+  const openRideQuery = useQuery({
+    queryKey: ['user', 'rides', 'open'],
+    queryFn: fetchActiveRide,
+    enabled: canSubmit,
+  });
+
+  const lockedRide = openRideQuery.data ?? null;
+  const hasOpenRide = isCustomerRideLocked(lockedRide);
+  const workflowHref = lockedRide ? customerWorkflowPath(lockedRide) : null;
+
   const driverQuery = useQuery({
     queryKey: ['driver-details-request', driverId],
     queryFn: () => fetchDriverById(driverId!),
     enabled: Boolean(driverId),
   });
+
+  useEffect(() => {
+    if (hasOpenRide && workflowHref) {
+      navigate(workflowHref, { replace: true });
+    }
+  }, [hasOpenRide, workflowHref, navigate]);
 
   const createRideMutation = useMutation({
     mutationFn: createRideRequest,
@@ -100,6 +121,12 @@ export default function RequestServicePage() {
     if (!canSubmit) {
       toast.error('Login as a user account to submit a request.');
       navigate('/login');
+      return;
+    }
+
+    if (hasOpenRide && workflowHref) {
+      toast.info('You already have an open ride request.');
+      navigate(workflowHref);
       return;
     }
 
@@ -165,6 +192,19 @@ export default function RequestServicePage() {
           className="mb-0"
         />
 
+        {hasOpenRide && workflowHref ? (
+          <Card className="rounded-2xl border-primary/40 bg-primary/5">
+            <CardContent className="flex flex-col gap-3 p-6 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-sm text-muted-foreground">
+                You already have an open ride request. Track its status to continue.
+              </p>
+              <Button asChild type="button">
+                <Link to={workflowHref}>Track request</Link>
+              </Button>
+            </CardContent>
+          </Card>
+        ) : null}
+
         <div className="grid gap-4 lg:grid-cols-[3fr_1fr]">
           <Card className="h-fit rounded-2xl border-border bg-white">
             <CardHeader>
@@ -174,6 +214,7 @@ export default function RequestServicePage() {
               <form
                 onSubmit={handleSubmit(onSubmit as SubmitHandler<z.infer<typeof formSchema>>)}
                 className="space-y-4"
+                aria-disabled={hasOpenRide}
               >
                 <Field>
                   <FieldLabel>
@@ -185,6 +226,7 @@ export default function RequestServicePage() {
                       className="pl-9"
                       {...register('pickupLocation')}
                       placeholder="Enter pickup address or landmark"
+                      disabled={hasOpenRide}
                     />
                   </FieldContent>
                   <InputError message={errors?.pickupLocation?.message} />
@@ -199,6 +241,7 @@ export default function RequestServicePage() {
                       className="pl-9"
                       {...register('dropOffLocation')}
                       placeholder="Enter destination address"
+                      disabled={hasOpenRide}
                     />
                   </FieldContent>
                   <InputError message={errors?.dropOffLocation?.message} />
@@ -212,6 +255,7 @@ export default function RequestServicePage() {
                     <Textarea
                       {...register('additionalNotes')}
                       placeholder="e.g., Vehicle type, special requirements, accessibility info..."
+                      disabled={hasOpenRide}
                     />
                   </FieldContent>
                   <InputError message={errors?.additionalNotes?.message} />
@@ -222,7 +266,7 @@ export default function RequestServicePage() {
                 <Button
                   type="submit"
                   className="w-full"
-                  disabled={createRideMutation.isPending}
+                  disabled={hasOpenRide || createRideMutation.isPending}
                 >
                   {createRideMutation.isPending ? 'Sending...' : navigator.onLine ? 'Send Request' : 'Save Offline'}
                 </Button>

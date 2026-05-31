@@ -168,6 +168,7 @@ export async function updateDriverLocation(payload: {
   await request.put('/driver/location', payload);
 }
 
+/** Customer's current open ride (pending, active, or arrived), or null. */
 export async function fetchActiveRide(): Promise<RidePayload | null> {
   const res = await request.get<ApiEnvelope<RidePayload | null>>('/user/rides/active');
   return res.data.data;

@@ -7,10 +7,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import Section from '@/components/section';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useInitials } from '@/hooks/useInitials';
-import { useRideFromUrl } from '@/features/rides/useRideFromUrl';
+import { useCustomerRideWorkflowPolling } from '@/features/rides/useCustomerRideWorkflowPolling';
 
 export default function RequestAcceptedPage() {
-  const { ride, conversationId } = useRideFromUrl();
+  const { ride, conversationId } = useCustomerRideWorkflowPolling();
   const driver = ride?.driver;
   const getInitials = useInitials();
 

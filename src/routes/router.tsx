@@ -25,6 +25,10 @@ import ChatRoom from '@/demo/ChatRoom';
 import { RoleGate } from './RoleGate';
 import { DriverApprovedGate } from './DriverApprovedGate';
 import { ProtectedRoute } from './ProtectedRoute';
+import { DriverBookingBlockGate } from './DriverBookingBlockGate';
+import { CustomerRideLockGate } from './CustomerRideLockGate';
+import { CustomerPublicRideLockGate } from './CustomerPublicRideLockGate';
+import { DriverActiveRideLockGate } from './DriverActiveRideLockGate';
 import RegisterOtpVerificationPage from '@/pages/auth/RegisterOtpVerificationPage';
 import AdminRidesDetailPage from '@/pages/admin/AdminRidesDetailPage';
 
@@ -142,7 +146,13 @@ export const router = createBrowserRouter([
         ],
       },
       {
-        element: <FrontendLayout />,
+        element: (
+          <DriverBookingBlockGate>
+            <CustomerPublicRideLockGate>
+              <FrontendLayout />
+            </CustomerPublicRideLockGate>
+          </DriverBookingBlockGate>
+        ),
         children: [
           { path: '/', element: <Home /> },
           { path: '/find-drivers', element: <FindDriversPage /> },
@@ -167,7 +177,9 @@ export const router = createBrowserRouter([
       {
         element: (
           <RoleGate allow={['user']} fallback="/unauthorized">
-            <FrontendLayout />
+            <CustomerRideLockGate>
+              <FrontendLayout />
+            </CustomerRideLockGate>
           </RoleGate>
         ),
         children: [
@@ -196,7 +208,9 @@ export const router = createBrowserRouter([
         element: (
           <RoleGate allow="driver" fallback="/unauthorized">
             <DriverApprovedGate>
-              <DriverLayout />
+              <DriverActiveRideLockGate>
+                <DriverLayout />
+              </DriverActiveRideLockGate>
             </DriverApprovedGate>
           </RoleGate>
         ),

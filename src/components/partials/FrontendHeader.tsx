@@ -1,5 +1,7 @@
 import { Link, NavLink } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 
+import { fetchActiveRide } from '@/api/rides';
 import { useAuth } from '@/auth/useAuth';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -18,7 +20,11 @@ import { useEffect, useState } from 'react';
 import { Menu, X } from 'lucide-react';
 import { motion, useScroll, useMotionValueEvent } from 'motion/react';
 import { DRIVER_ONBOARDING_PATH, isDriverAwaitingApproval } from '@/auth/completePassportLogin';
-import { getUserRoles, notificationsBasePathForUser, roleDashboards } from '@/auth/roles';
+import { getUserRoles, hasAnyRole, notificationsBasePathForUser, roleDashboards } from '@/auth/roles';
+import {
+  customerWorkflowPath,
+  isCustomerRideLocked,
+} from '@/features/rides/rideWorkflow';
 import { NotificationBellButton } from '@/features/notifications/NotificationBellButton';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { useInitials } from '@/hooks/useInitials';
@@ -29,7 +35,7 @@ type BeforeInstallPromptEvent = Event & {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
 };
 
-const navigation = [
+const baseNavigation = [
   { name: 'Home', to: '/' },
   { name: 'Find Drivers', to: '/find-drivers' },
   { name: 'How It Works', to: '/#how-it-works' },
@@ -110,6 +116,33 @@ export function FrontendHeader() {
   };
   const canShowInstallAction = Boolean(deferredPrompt) || showIosInstall;
 
+  const isDriver = hasAnyRole(user, 'driver');
+  const isCustomer = hasAnyRole(user, 'user');
+
+  const openRideQuery = useQuery({
+    queryKey: ['user', 'rides', 'open'],
+    queryFn: fetchActiveRide,
+    enabled: isAuthenticated && isCustomer,
+  });
+
+  const lockedRide = openRideQuery.data ?? null;
+  const customerLocked = isCustomerRideLocked(lockedRide);
+  const trackRequestHref = lockedRide ? customerWorkflowPath(lockedRide) : null;
+
+  const navigation = baseNavigation.filter((item) => {
+    if (isDriver && (item.to === '/find-drivers' || item.to === '/')) {
+      return false;
+    }
+    if (customerLocked && item.to === '/find-drivers') {
+      return false;
+    }
+    return true;
+  });
+
+  const navItems = trackRequestHref
+    ? [{ name: 'Track request', to: trackRequestHref }, ...navigation]
+    : navigation;
+
   const awaitingDriverApproval = isDriverAwaitingApproval(user);
   const dashboardLink = awaitingDriverApproval
     ? DRIVER_ONBOARDING_PATH
@@ -132,7 +165,7 @@ export function FrontendHeader() {
         </Link>
 
         <nav className="hidden items-center gap-5 text-sm md:flex">
-          {navigation.map((item) => (
+          {navItems.map((item) => (
             <NavLink
               key={item.name}
               to={item.to}
@@ -178,7 +211,7 @@ export function FrontendHeader() {
 
               {/* Staggered Items */}
               <div className="mt-5 flex flex-col gap-4">
-                {navigation.map((item) => (
+                {navItems.map((item) => (
                   <div key={item.name}>
                     <NavLink
                       to={item.to}

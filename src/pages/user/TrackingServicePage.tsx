@@ -10,7 +10,7 @@ import Section from '@/components/section';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useInitials } from '@/hooks/useInitials';
 import Image from '@/components/image';
-import { useRideFromUrl } from '@/features/rides/useRideFromUrl';
+import { useCustomerRideWorkflowPolling } from '@/features/rides/useCustomerRideWorkflowPolling';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   completeRideAsUser,
@@ -25,7 +25,7 @@ import { toast } from 'sonner';
 export default function TrackingServicePage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { ride, conversationId, refetch: refetchRide } = useRideFromUrl();
+  const { ride, conversationId, refetch: refetchRide } = useCustomerRideWorkflowPolling();
   const driver = ride?.driver;
   const getInitials = useInitials();
   const pickupDone = ride ? ridePickupArrived(ride) : false;
