@@ -19,7 +19,7 @@ export function CustomerRideLockGate({ children }: { children: React.ReactNode }
     queryKey: ['user', 'rides', 'open'],
     queryFn: fetchActiveRide,
     enabled: sessionStatus === 'authenticated',
-    staleTime: 0,
+    staleTime: 30_000,
   });
 
   if (sessionStatus === 'loading' || openRideQuery.isLoading) {
