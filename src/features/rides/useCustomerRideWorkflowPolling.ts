@@ -20,15 +20,15 @@ export function useCustomerRideWorkflowPolling(enabled = true) {
 
   useEffect(() => {
     if (!enabled || !ride || isLoading) return;
-  
+
     const target = customerWorkflowPath(ride);
     if (!target) return;
-  
+
     const current = `${window.location.pathname}${window.location.search}`;
     if (!workflowPathsMatch(current, target)) {
       navigate(target, { replace: true });
     }
-  }, [enabled, ride, isLoading]);
+  }, [enabled, ride, isLoading, navigate]);
 
   return {
     ride,
