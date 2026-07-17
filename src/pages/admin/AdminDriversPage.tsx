@@ -90,7 +90,10 @@ export default function AdminDriversPage() {
           perPage: paginated.meta?.per_page ?? 15,
         });
       } catch (error) {
-        if (isAxiosError(error) && (error.code === 'ERR_CANCELED' || error.name === 'CanceledError')) {
+        if (
+          isAxiosError(error) &&
+          (error.code === 'ERR_CANCELED' || error.name === 'CanceledError')
+        ) {
           return;
         }
         console.error(error);
@@ -104,6 +107,8 @@ export default function AdminDriversPage() {
 
   useEffect(() => {
     const controller = new AbortController();
+    // Fetching is the effect's external synchronization; state updates occur after the request resolves.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void fetchDrivers(controller.signal);
     return () => controller.abort();
   }, [fetchDrivers]);
@@ -194,6 +199,7 @@ export default function AdminDriversPage() {
             drivers={drivers}
             onApprove={handleApprove}
             onReject={handleReject}
+            onUpdated={fetchDrivers}
           />
         );
       case 'all':
@@ -205,14 +211,36 @@ export default function AdminDriversPage() {
             onFeatured={handleFeatured}
             onUnsuspend={handleUnsuspend}
             onUnfeature={handleUnfeature}
+            onUpdated={fetchDrivers}
           />
         );
       case 'featured_drivers':
-        return <DriverTable variant="featured" drivers={drivers} onUnfeature={handleUnfeature} />;
+        return (
+          <DriverTable
+            variant="featured"
+            drivers={drivers}
+            onUnfeature={handleUnfeature}
+            onUpdated={fetchDrivers}
+          />
+        );
       case 'suspended':
-        return <DriverTable variant="suspended" drivers={drivers} onUnsuspend={handleUnsuspend} />;
+        return (
+          <DriverTable
+            variant="suspended"
+            drivers={drivers}
+            onUnsuspend={handleUnsuspend}
+            onUpdated={fetchDrivers}
+          />
+        );
       case 'rejected':
-        return <DriverTable variant="rejected" drivers={drivers} onApprove={handleApprove} />;
+        return (
+          <DriverTable
+            variant="rejected"
+            drivers={drivers}
+            onApprove={handleApprove}
+            onUpdated={fetchDrivers}
+          />
+        );
       default:
         return null;
     }
@@ -235,7 +263,7 @@ export default function AdminDriversPage() {
           className="mb-4"
         />
 
-        <div className={cn('flex items-center gap-2 border-b border-border mt-8')}>
+        <div className={cn('mt-8 flex items-center gap-2 border-b border-border')}>
           {TABS.map((item) => (
             <button
               key={item.tab}

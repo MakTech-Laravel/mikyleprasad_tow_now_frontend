@@ -11,26 +11,41 @@ import { useState, useRef, useEffect } from 'react';
 import { toast } from 'sonner';
 import { request } from '@/api/request';
 import { Camera, User } from 'lucide-react';
-import { useSiteSettings } from '@/hooks/useSiteSettings';
+import { useSiteSettings, type SiteSettings } from '@/hooks/useSiteSettings';
 import { queryClient } from '@/lib/queryClient';
 import { Field, FieldGroup, FieldLabel } from '@/components/ui/field';
 import InputPassword from '@/components/input-password';
 import InputError from '@/components/input-error';
+import { isAxiosError } from 'axios';
+import type { AuthUser } from '@/auth/types';
+
+type AdminSettingsUpdateData = {
+  admin: {
+    id: number;
+    name: string;
+    email: string;
+    phone: string;
+    avatar_url?: string | null;
+  };
+  site_setting: SiteSettings | null;
+};
+
+type ApiEnvelope<T> = {
+  success: boolean;
+  message: string;
+  data: T;
+};
 
 const settingsSchema = z
   .object({
-    name: z.string().min(1, 'Name is required'),
-    email: z.string().email('Invalid email'),
-    phone: z.string().min(1, { message: 'Phone number is required' }),
+    name: z.string().trim().min(1, 'Name is required'),
+    email: z.string().trim().email('Invalid email'),
+    phone: z.string().trim().min(1, { message: 'Phone number is required' }),
 
-    site_email: z.string().email('Invalid email'),
-    site_phone: z.string().min(1, { message: 'Phone number is required' }),
-    site_address: z.string().min(1, 'Address is required'),
+    site_email: z.union([z.literal(''), z.string().trim().email('Invalid email')]),
+    site_phone: z.string(),
+    site_address: z.string(),
 
-    current_password: z
-      .string()
-      .optional()
-      .or(z.literal('').transform(() => undefined)),
     password: z
       .string()
       .optional()
@@ -38,25 +53,27 @@ const settingsSchema = z
       .refine((val) => !val || val.length >= 6, {
         message: 'Password must be at least 6 characters',
       }),
-    password_confirmation: z
-      .string()
-      .optional()
-      .or(z.literal('').transform(() => undefined)),
   })
-  .refine(
-    (data) => {
-      if (data.password && !data.current_password) return false;
-      return true;
-    },
-    { message: 'Current password is required', path: ['current_password'] },
-  )
-  .refine(
-    (data) => {
-      if (data.password && data.password !== data.password_confirmation) return false;
-      return true;
-    },
-    { message: 'Passwords do not match', path: ['password_confirmation'] },
-  );
+  .superRefine((data, context) => {
+    const siteValues = [data.site_email, data.site_phone, data.site_address].map((value) =>
+      value.trim(),
+    );
+    const hasAnySiteValue = siteValues.some(Boolean);
+
+    if (!hasAnySiteValue) return;
+
+    (['site_email', 'site_phone', 'site_address'] as const).forEach((field, index) => {
+      if (!siteValues[index]) {
+        context.addIssue({
+          code: 'custom',
+          path: [field],
+          message: 'Required when updating site information',
+        });
+      }
+    });
+  });
+
+type SettingsFormValues = z.infer<typeof settingsSchema>;
 
 export default function AdminSettingsPage() {
   // const [loading, setLoading] = useState(false);
@@ -66,7 +83,7 @@ export default function AdminSettingsPage() {
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const { user } = useAuth();
+  const { user, setUser } = useAuth();
   const { siteSettings } = useSiteSettings();
 
   const {
@@ -74,8 +91,10 @@ export default function AdminSettingsPage() {
     handleSubmit,
     reset,
     setError,
+    setValue,
+    clearErrors,
     formState: { errors },
-  } = useForm({
+  } = useForm<SettingsFormValues>({
     resolver: zodResolver(settingsSchema),
     defaultValues: {
       name: user?.name || '',
@@ -141,7 +160,7 @@ export default function AdminSettingsPage() {
     handleRemoveAvatar();
   };
 
-  const onSubmit = async (data: z.infer<typeof settingsSchema>) => {
+  const onSubmit = async (data: SettingsFormValues) => {
     // setLoading(true);
     try {
       const formData = new FormData();
@@ -149,53 +168,79 @@ export default function AdminSettingsPage() {
       formData.append('name', data.name);
       formData.append('email', data.email);
       formData.append('phone', data.phone);
-      formData.append('site_email', data.site_email);
-      formData.append('site_phone', data.site_phone);
-      formData.append('site_address', data.site_address);
+      const hasSiteData = [data.site_email, data.site_phone, data.site_address].some((value) =>
+        value.trim(),
+      );
+
+      if (hasSiteData) {
+        formData.append('site_email', data.site_email.trim());
+        formData.append('site_phone', data.site_phone.trim());
+        formData.append('site_address', data.site_address.trim());
+      }
 
       if (avatarFile) {
         formData.append('avatar', avatarFile);
       }
 
-      if (data.password && data.current_password) {
-        formData.append('current_password', data.current_password);
+      if (data.password) {
         formData.append('password', data.password);
-        formData.append('password_confirmation', data.password_confirmation ?? '');
       }
 
-      await request.post('/admin/profile/update', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
+      const response = await request.post<ApiEnvelope<AdminSettingsUpdateData>>(
+        '/admin/profile/update',
+        formData,
+        {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        },
+      );
+      const updated = response.data.data;
+      const updatedSiteSettings = updated.site_setting ?? {
+        site_email: data.site_email,
+        site_phone: data.site_phone,
+        site_address: data.site_address,
+      };
 
-      await queryClient.invalidateQueries({ queryKey: ['site-settings'] });
+      if (user) {
+        setUser({
+          ...user,
+          ...updated.admin,
+        } satisfies AuthUser);
+      }
+      queryClient.setQueryData<SiteSettings>(['site-settings'], (current) => ({
+        ...current,
+        ...updatedSiteSettings,
+      }));
+      reset({
+        name: updated.admin.name,
+        email: updated.admin.email,
+        phone: updated.admin.phone ?? '',
+        site_email: updatedSiteSettings.site_email ?? '',
+        site_phone: updatedSiteSettings.site_phone ?? '',
+        site_address: updatedSiteSettings.site_address ?? '',
+        password: undefined,
+      });
+      setAvatarFile(null);
+      setAvatarPreview(null);
 
       toast.success('Settings updated successfully');
-    } catch (error: any) {
-      const response = error?.response;
+    } catch (error: unknown) {
+      const response = isAxiosError<{
+        errors?: Record<string, string[]>;
+      }>(error)
+        ? error.response
+        : undefined;
 
       if (response?.status === 422) {
         const errors = response.data?.errors;
         if (errors) {
           Object.entries(errors).forEach(([field, messages]) => {
-            setError(field as any, {
+            setError(field as keyof SettingsFormValues, {
               type: 'server',
               message: (messages as string[])[0],
             });
           });
         }
         return;
-      }
-
-      if (response?.status === 500) {
-        const message: string = response.data?.message ?? '';
-
-        if (message.toLowerCase().includes('current password')) {
-          setError('current_password', {
-            type: 'server',
-            message: message,
-          });
-          return;
-        }
       }
 
       toast.error('Failed to update profile');
@@ -323,7 +368,20 @@ export default function AdminSettingsPage() {
                     >
                       Phone Number
                     </Label>
-                    <Input id="profile-phone" {...register('phone')} className="bg-background" />
+                    <Input
+                      id="profile-phone"
+                      type="tel"
+                      autoComplete="tel"
+                      {...register('phone')}
+                      onChange={(event) => {
+                        setValue('phone', event.target.value, {
+                          shouldDirty: true,
+                          shouldValidate: true,
+                        });
+                        if (event.target.value.trim()) clearErrors('phone');
+                      }}
+                      className="bg-background"
+                    />
                     {errors.phone && <p className="text-xs text-red-500">{errors.phone.message}</p>}
                   </div>
                   <div className="space-y-1.5">
@@ -349,15 +407,6 @@ export default function AdminSettingsPage() {
               <h4 className="text-lg font-semibold">Change Password</h4>
               <FieldGroup className="mt-4 gap-2">
                 <Field className="gap-1">
-                  <FieldLabel>Current Password</FieldLabel>
-                  <InputPassword
-                    {...register('current_password')}
-                    placeholder="Enter your current password"
-                    className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
-                  />
-                  <InputError message={errors.current_password?.message} />
-                </Field>
-                <Field className="gap-1">
                   <FieldLabel>New Password</FieldLabel>
                   <InputPassword
                     {...register('password')}
@@ -365,15 +414,6 @@ export default function AdminSettingsPage() {
                     className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
                   />
                   <InputError message={errors.password?.message} />
-                </Field>
-                <Field className="gap-1">
-                  <FieldLabel>Confirm New Password</FieldLabel>
-                  <InputPassword
-                    {...register('password_confirmation')}
-                    placeholder="Confirm your new password"
-                    className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
-                  />
-                  <InputError message={errors.password_confirmation?.message} />
                 </Field>
               </FieldGroup>
             </Card>

@@ -1,13 +1,19 @@
-import { Ban, Check, Eye, MapPin, RotateCcw, Star, StarOff, X } from 'lucide-react';
+import { Ban, Check, Eye, MapPin, Pencil, RotateCcw, Star, StarOff, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
+import { toast } from 'sonner';
+import { isAxiosError } from 'axios';
 
 import { getInitialsFromName } from '@/hooks/useInitials';
+import { request } from '@/api/request';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import InputPassword from '@/components/input-password';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Table,
   TableBody,
@@ -35,7 +41,7 @@ interface BaseDriver {
   rating: number;
   avatar_url: string;
   is_suspended?: boolean;
-  is_featured?: boolean; 
+  is_featured?: boolean;
 }
 
 interface PendingDriver extends BaseDriver {
@@ -304,17 +310,158 @@ function DriverDetailsModal({
   );
 }
 
+function EditDriverModal({
+  driver,
+  open,
+  onOpenChange,
+  onUpdated,
+}: {
+  driver: Driver | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onUpdated?: () => void;
+}) {
+  const [form, setForm] = useState(() => ({
+    name: driver?.name ?? '',
+    email: driver?.email ?? '',
+    phone: driver?.phone ?? '',
+    address: driver?.address ?? '',
+    password: '',
+  }));
+  const [saving, setSaving] = useState(false);
+
+  const updateField = (field: keyof typeof form, value: string) => {
+    setForm((current) => ({ ...current, [field]: value }));
+  };
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!driver) return;
+
+    if (!form.name.trim() || !form.email.trim()) {
+      toast.error('Name and email are required.');
+      return;
+    }
+
+    if (form.password && form.password.length < 6) {
+      toast.error('Password must be at least 6 characters.');
+      return;
+    }
+
+    try {
+      setSaving(true);
+      await request.patch(`/admin/drivers/${driver.id}`, {
+        name: form.name.trim(),
+        email: form.email.trim(),
+        phone: form.phone.trim() || null,
+        address: form.address.trim() || null,
+        ...(form.password ? { password: form.password } : {}),
+      });
+
+      toast.success('Driver updated successfully.');
+      onOpenChange(false);
+      onUpdated?.();
+    } catch (error: unknown) {
+      const validationErrors = isAxiosError<{
+        errors?: Record<string, string[]>;
+      }>(error)
+        ? error.response?.data?.errors
+        : undefined;
+      const firstMessage = validationErrors
+        ? (Object.values(validationErrors).flat()[0] as string | undefined)
+        : undefined;
+      toast.error(firstMessage ?? 'Failed to update driver.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Edit Driver</DialogTitle>
+          <p className="text-sm text-muted-foreground">
+            Update driver information or enter a new password.
+          </p>
+        </DialogHeader>
+
+        <form className="space-y-4" onSubmit={handleSubmit}>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="driver-name">Full Name</Label>
+              <Input
+                id="driver-name"
+                value={form.name}
+                onChange={(event) => updateField('name', event.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="driver-email">Email Address</Label>
+              <Input
+                id="driver-email"
+                type="email"
+                value={form.email}
+                onChange={(event) => updateField('email', event.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="driver-phone">Phone Number</Label>
+              <Input
+                id="driver-phone"
+                value={form.phone}
+                onChange={(event) => updateField('phone', event.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="driver-address">Address</Label>
+              <Input
+                id="driver-address"
+                value={form.address}
+                onChange={(event) => updateField('address', event.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="driver-password">New Password</Label>
+            <InputPassword
+              id="driver-password"
+              value={form.password}
+              onChange={(event) => updateField('password', event.target.value)}
+              placeholder="Leave blank to keep the current password"
+            />
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2">
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={saving}>
+              {saving ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 // ── Action buttons ────────────────────────────────────────────────────────────
 
 function ActionButtons({
-driver,
+  driver,
   config,
   onApprove,
   onReject,
   onSuspend,
   onFeatured,
   onUnfeature,
-  onUnsuspend
+  onUnsuspend,
+  onEdit,
+  onView,
 }: {
   driver: Driver;
   config: ColumnConfig;
@@ -324,35 +471,54 @@ driver,
   onFeatured?: (id: string) => void;
   onUnfeature?: (id: string) => void;
   onUnsuspend?: (id: string) => void;
+  onEdit: (driver: Driver) => void;
   onView: (driver: Driver) => void;
 }) {
   const navigate = useNavigate();
+  void onView;
   return (
     <div className="flex items-center justify-end gap-2">
       {config.showApproveReject && (
         <>
-          <Button size="icon" className="size-8 cursor-pointer rounded-lg" onClick={() => onApprove?.(driver.id)}>
+          <Button
+            size="icon"
+            className="size-8 cursor-pointer rounded-lg"
+            onClick={() => onApprove?.(driver.id)}
+          >
             <Check className="size-4" />
           </Button>
-          <Button size="icon" variant="outline" className="size-8 cursor-pointer rounded-lg bg-destructive/10 text-destructive" onClick={() => onReject?.(driver.id)}>
+          <Button
+            size="icon"
+            variant="outline"
+            className="size-8 cursor-pointer rounded-lg bg-destructive/10 text-destructive"
+            onClick={() => onReject?.(driver.id)}
+          >
             <X className="size-4 text-destructive" />
           </Button>
         </>
       )}
 
       {config.showApproveOnly && (
-        <Button size="icon" className="size-8 cursor-pointer rounded-lg" onClick={() => onApprove?.(driver.id)}>
+        <Button
+          size="icon"
+          className="size-8 cursor-pointer rounded-lg"
+          onClick={() => onApprove?.(driver.id)}
+        >
           <Check className="size-4" />
         </Button>
       )}
 
       {config.showRestore && (
-        <Button size="icon" className="size-8 cursor-pointer rounded-lg" onClick={() => onUnsuspend?.(driver.id)}>
+        <Button
+          size="icon"
+          className="size-8 cursor-pointer rounded-lg"
+          onClick={() => onUnsuspend?.(driver.id)}
+        >
           <RotateCcw className="size-4" />
         </Button>
       )}
-      {config.showSuspend && (
-        driver.is_suspended ? (
+      {config.showSuspend &&
+        (driver.is_suspended ? (
           <Button
             size="icon"
             className="size-8 cursor-pointer rounded-lg"
@@ -371,11 +537,10 @@ driver,
           >
             <Ban className="size-4 text-destructive" />
           </Button>
-        )
-      )}
+        ))}
 
-      {config.showFeatured && (
-        driver.is_featured ? (
+      {config.showFeatured &&
+        (driver.is_featured ? (
           <Button
             size="icon"
             variant="outline"
@@ -395,16 +560,32 @@ driver,
           >
             <Star className="size-4 text-yellow-600" />
           </Button>
-        )
-      )}
+        ))}
 
       {config.showUnfeature && (
-        <Button size="icon" variant="outline" className="size-8 cursor-pointer rounded-lg text-muted-foreground" onClick={() => onUnfeature?.(driver.id)}>
+        <Button
+          size="icon"
+          variant="outline"
+          className="size-8 cursor-pointer rounded-lg text-muted-foreground"
+          onClick={() => onUnfeature?.(driver.id)}
+        >
           <StarOff className="size-4" />
         </Button>
       )}
 
-      <button onClick={() => navigate(`/admin/drivers/detail/${driver.id}`)} className="flex size-8 cursor-pointer items-center justify-center rounded-lg bg-accent">
+      <Button
+        size="icon"
+        variant="outline"
+        className="size-8 cursor-pointer rounded-lg"
+        aria-label="Edit driver"
+        onClick={() => onEdit(driver)}
+      >
+        <Pencil className="size-4" />
+      </Button>
+      <button
+        onClick={() => navigate(`/admin/drivers/detail/${driver.id}`)}
+        className="flex size-8 cursor-pointer items-center justify-center rounded-lg bg-accent"
+      >
         <Eye className="size-4 text-muted-foreground" />
       </button>
     </div>
@@ -422,6 +603,7 @@ function DriverRow({
   onFeatured,
   onUnfeature,
   onUnsuspend,
+  onEdit,
   onView,
 }: {
   driver: Driver;
@@ -432,6 +614,7 @@ function DriverRow({
   onFeatured?: (id: string) => void;
   onUnfeature?: (id: string) => void;
   onUnsuspend?: (id: string) => void;
+  onEdit: (driver: Driver) => void;
   onView: (driver: Driver) => void;
 }) {
   const isFullDriver = !isPending(driver);
@@ -510,6 +693,7 @@ function DriverRow({
           onFeatured={onFeatured}
           onUnfeature={onUnfeature}
           onUnsuspend={onUnsuspend}
+          onEdit={onEdit}
           onView={onView}
         />
       </TableCell>
@@ -528,17 +712,40 @@ interface DriverTableProps {
   onFeatured?: (driverId: string) => void;
   onUnfeature?: (driverId: string) => void;
   onUnsuspend?: (driverId: string) => void;
+  onUpdated?: () => void;
 }
 
-export function DriverTable({ drivers, variant, onApprove, onReject, onSuspend, onFeatured, onUnfeature, onUnsuspend }: DriverTableProps) {
+export function DriverTable({
+  drivers,
+  variant,
+  onApprove,
+  onReject,
+  onSuspend,
+  onFeatured,
+  onUnfeature,
+  onUnsuspend,
+  onUpdated,
+}: DriverTableProps) {
   const config = VARIANT_CONFIG[variant];
 
   const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [driverBeingEdited, setDriverBeingEdited] = useState<Driver | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   const handleView = (driver: Driver) => {
     setSelectedDriver(driver);
     setIsModalOpen(true);
+  };
+
+  const handleEdit = (driver: Driver) => {
+    setDriverBeingEdited(driver);
+    setIsEditModalOpen(true);
+  };
+
+  const handleEditModalOpenChange = (open: boolean) => {
+    setIsEditModalOpen(open);
+    if (!open) setDriverBeingEdited(null);
   };
 
   return (
@@ -604,6 +811,7 @@ export function DriverTable({ drivers, variant, onApprove, onReject, onSuspend, 
                       onFeatured={onFeatured}
                       onUnfeature={onUnfeature}
                       onUnsuspend={onUnsuspend}
+                      onEdit={handleEdit}
                       onView={handleView}
                     />
                   ))
@@ -619,6 +827,13 @@ export function DriverTable({ drivers, variant, onApprove, onReject, onSuspend, 
         driver={selectedDriver}
         open={isModalOpen}
         onOpenChange={setIsModalOpen}
+      />
+      <EditDriverModal
+        key={driverBeingEdited?.id ?? 'no-driver'}
+        driver={driverBeingEdited}
+        open={isEditModalOpen}
+        onOpenChange={handleEditModalOpenChange}
+        onUpdated={onUpdated}
       />
     </>
   );
